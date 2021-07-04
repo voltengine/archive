@@ -1,0 +1,27 @@
+[
+	{
+		"keyword": "engine",
+		"packages": [
+			"volt"
+		]
+	},
+	{
+		"keyword": "python",
+		"packages": [
+			"voltpy"
+		]
+	},
+	{
+		"keyword": "volt",
+		"packages": [
+			"volt",
+			"voltpy"
+		]
+	},
+	{
+		"keyword": "voltpy",
+		"packages": [
+			"voltpy"
+		]
+	}
+]

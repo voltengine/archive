@@ -26,7 +26,8 @@ jobs:
       - name: Commit files
         run: |
           git config --local user.name "keyword-indexing"
-          git commit -m "Regenerate keyword index" -a
+          git add .
+          git commit -m "Regenerate keyword index"
       
       - name: Push changes
         uses: ad-m/github-push-action@master

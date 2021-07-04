@@ -1,4 +1,4 @@
-import json, os
+import hashlib, json, os
 
 packages_dir = './packages/'
 keywords = {}
@@ -26,5 +26,10 @@ sorted_keywords = [{
 
 sorted_keywords.sort(key=lambda x : x['keyword'])
 
+json_string = json.dumps(sorted_keywords, sort_keys=True, indent='\t')
+
 with open('index.json', 'w') as file:
-    json.dump(sorted_keywords, file, indent='\t')
+    file.write(json_string)
+
+with open('sha-256.json', 'w') as file:
+	json.dump(hashlib.sha256(json_string.encode()).hexdigest(), file)

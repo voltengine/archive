@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  index:
+  index-keywords:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,3 +22,13 @@ jobs:
 
       - name: Execute indexing script
         run: python index_keywords.py
+
+      - name: Commit files
+        run: |
+          git config --local user.name "keyword-indexing"
+          git commit -m "Regenerate keyword index" -a
+      
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -14,8 +14,8 @@
 	{
 		"keyword": "volt",
 		"packages": [
-			"volt",
-			"voltpy"
+			"voltpy",
+			"volt"
 		]
 	},
 	{

@@ -1,7 +1,6 @@
-import os, json
+import json, os
 
 packages_dir = './packages/'
-
 keywords = {}
 
 def add_package_keyword(package_name, keyword):
@@ -13,9 +12,10 @@ def add_package_keyword(package_name, keyword):
 for filename in os.listdir(packages_dir):
 	package_name = os.path.splitext(filename)[0]
 
-	with open(os.path.join(packages_dir, filename), 'r') as file:
-		for keyword in package_name.split('-'):
+	for keyword in package_name.split('-'):
 			add_package_keyword(package_name, keyword)
+
+	with open(os.path.join(packages_dir, filename), 'r') as file:
 		for keyword in json.load(file)['keywords']:
 			add_package_keyword(package_name, keyword)
 
@@ -26,5 +26,5 @@ sorted_keywords = [{
 
 sorted_keywords.sort(key=lambda x : x['keyword'])
 
-with open('keywords.json', 'w') as file:
+with open('index.json', 'w') as file:
     json.dump(sorted_keywords, file, indent='\t')

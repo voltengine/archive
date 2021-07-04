@@ -27,7 +27,7 @@ jobs:
         run: |
           git config --local user.name "archivist"
           git add .
-          git commit -m "Regenerate keyword index"
+          git commit -m "Regenerate keyword index" || true
       
       - name: Push changes
         uses: ad-m/github-push-action@master

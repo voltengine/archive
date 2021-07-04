@@ -31,5 +31,5 @@ json_string = json.dumps(sorted_keywords, sort_keys=True, indent='\t')
 with open('packages.json', 'w') as file:
     file.write(json_string)
 
-with open('hash.json', 'w') as file:
-	json.dump(hashlib.sha256(json_string.encode()).hexdigest(), file)
+with open('packages.sha256', 'w') as file:
+	file.write(hashlib.sha256(json_string.encode()).hexdigest())

@@ -21,7 +21,7 @@ for filename in os.listdir(packages_dir):
 
 sorted_keywords = [{
 	'keyword': keyword,
-	'packages': list(keywords[keyword])
+	'packages': sorted(keywords[keyword])
 } for keyword in keywords]
 
 sorted_keywords.sort(key=lambda x : x['keyword'])

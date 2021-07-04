@@ -28,7 +28,7 @@ sorted_keywords.sort(key=lambda x : x['keyword'])
 
 json_string = json.dumps(sorted_keywords, sort_keys=True, indent='\t')
 
-with open('index.json', 'w') as file:
+with open('packages.json', 'w') as file:
     file.write(json_string)
 
 with open('hash.json', 'w') as file:

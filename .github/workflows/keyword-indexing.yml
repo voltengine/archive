@@ -25,7 +25,6 @@ jobs:
 
       - name: Commit files
         run: |
-          git config --local user.name "keyword-indexing"
           git add .
           git commit -m "Regenerate keyword index"
       

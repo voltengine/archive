@@ -1,7 +1,8 @@
 {
-	"url": "https://github.com/voltengine/voltpy.git",
+	"git": "https://github.com/voltengine/voltpy.git",
 	"keywords": [
-		"volt",
-		"python"
-	]
+		"python",
+		"volt"
+	],
+	"info": "https://raw.githubusercontent.com/voltengine/voltpy/main/package.json"
 }

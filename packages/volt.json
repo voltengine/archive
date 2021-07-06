@@ -1,7 +1,6 @@
 {
-	"git": "https://github.com/voltengine/volt.git",
 	"keywords": [
 		"engine"
 	],
-	"info": "https://raw.githubusercontent.com/voltengine/volt/main/package.json"
+	"url": "https://raw.githubusercontent.com/voltengine/volt/main/package.json"
 }

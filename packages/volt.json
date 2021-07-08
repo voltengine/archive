@@ -2,5 +2,5 @@
 	"keywords": [
 		"engine"
 	],
-	"url": "https://raw.githubusercontent.com/voltengine/volt/main/package.json"
+	"manifest": "https://raw.githubusercontent.com/voltengine/volt/main/manifest.json"
 }

@@ -3,5 +3,5 @@
 		"python",
 		"volt"
 	],
-	"url": "https://raw.githubusercontent.com/voltengine/voltpy/main/package.json"
+	"manifest": "https://raw.githubusercontent.com/voltengine/voltpy/main/manifest.json"
 }

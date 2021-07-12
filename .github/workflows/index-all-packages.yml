@@ -1,4 +1,4 @@
-name: Keyword Indexing
+name: Index All Packages
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
           python-version: 3.8
 
       - name: Execute indexing script
-        run: python index_keywords.py
+        run: python index_all_packages.py
 
       - name: Commit files
         run: |

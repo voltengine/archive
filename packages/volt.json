@@ -1,6 +1,16 @@
 {
+	"description": "Volt Engine and editor.",
+	"git": "https://github.com/voltengine/volt/",
+	"id": "volt",
 	"keywords": [
 		"engine"
 	],
-	"manifest": "https://raw.githubusercontent.com/voltengine/volt/main/manifest.json"
+	"license": "MIT",
+	"publisher": "Volt Engine",
+	"releases": [
+		{
+			"version": "0.1.0"
+		}
+	],
+	"title": "Volt"
 }

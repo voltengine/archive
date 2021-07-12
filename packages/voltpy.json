@@ -1,7 +1,21 @@
 {
+	"description": "Python scripting in Volt.",
+	"git": "https://github.com/voltengine/voltpy/",
+	"id": "voltpy",
 	"keywords": [
 		"python",
+		"scripting",
 		"volt"
 	],
-	"manifest": "https://raw.githubusercontent.com/voltengine/voltpy/main/manifest.json"
+	"license": "MIT",
+	"publisher": "Volt Engine",
+	"releases": [
+		{
+			"dependencies": [
+				"volt:0.1.0"
+			],
+			"version": "0.1.0"
+		}
+	],
+	"title": "Volt Py"
 }

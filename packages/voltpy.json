@@ -9,13 +9,10 @@
 	],
 	"license": "MIT",
 	"publisher": "Volt Engine",
-	"releases": [
-		{
-			"dependencies": [
-				"volt:0.1.0"
-			],
-			"version": "0.1.0"
-		}
-	],
+	"releaseDependencies": {
+		"0.1.0": [
+			"volt:0.1"
+		]
+	},
 	"title": "Volt Py"
 }

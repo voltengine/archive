@@ -7,10 +7,8 @@
 	],
 	"license": "MIT",
 	"publisher": "Volt Engine",
-	"releases": [
-		{
-			"version": "0.1.0"
-		}
-	],
+	"releaseDependencies": {
+		"0.1.0": []
+	},
 	"title": "Volt"
 }

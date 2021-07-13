@@ -18,7 +18,7 @@ for filename in os.listdir(packages_dir):
 	content = ' '.join(filter(None, [
 		manifest.get('description'),
 		manifest.get('id'),
-		' '.join(filter(None, manifest.get('keywords'))),
+		' '.join(manifest.get('keywords', [])),
 		manifest.get('license'),
 		manifest.get('publisher'),
 		manifest.get('title')

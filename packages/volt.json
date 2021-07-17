@@ -10,5 +10,15 @@
 	"releaseDependencies": {
 		"0.1.0": []
 	},
-	"title": "Volt"
+	"title": "Volt",
+	"tokenHash": "a6cde18de113e060cb59bdd5a6dbf7894743202dd95dd323a53a09bc66c1488a",
+	"weeklyDownloads": {
+		"friday": 0,
+		"monday": 0,
+		"saturday": 0,
+		"sunday": 0,
+		"thursday": 0,
+		"tuesday": 0,
+		"wednesday": 0
+	}
 }

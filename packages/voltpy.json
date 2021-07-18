@@ -8,21 +8,12 @@
 		"volt"
 	],
 	"license": "MIT",
+	"owner": "rayferric",
 	"publisher": "Volt Engine",
 	"releaseDependencies": {
 		"0.1.0": [
 			"volt:0.1"
 		]
 	},
-	"title": "Volt Py",
-	"tokenHash": "b09172fc3d7cfe6db1d48b292ba8567945526574aee27b11d9e1e1c9d610345f",
-	"weeklyDownloads": {
-		"friday": 0,
-		"monday": 0,
-		"saturday": 0,
-		"sunday": 0,
-		"thursday": 0,
-		"tuesday": 0,
-		"wednesday": 0
-	}
+	"title": "Volt Py"
 }

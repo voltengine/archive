@@ -87,8 +87,7 @@ router.post('/', slowDown, async (req, res) => {
 			searchIndex.addMapping(keyword, pkg.id);
 
 		res.set('Location', req.protocol + '://'
-				+ req.hostname + ':'
-				+ process.env.PORT + '/package/'
+				+ req.hostname + '/package/'
 				+ pkg.id + '/');
 		res.status(201);
 		res.send(`Created ${pkg.id}.`);

@@ -36,7 +36,7 @@ router.post('/', slowDown, async (req, res) => {
 	}
 
 	const scope = pkg.id.substr(0, pkg.id.indexOf('/'));
-	const error = github.checkAuthorization(req.query.token, scope);
+	const error = await github.checkAuthorization(req.query.token, scope);
 	if (error !== undefined) {
 		res.status(error.status);
 		res.send(error.message);

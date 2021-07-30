@@ -13,13 +13,14 @@
 	},
 	"keywords": [
 		"volt",
-		"engine",
 		"archive",
+		"package-manager",
 		"server",
 		"archive",
+		"search-index",
 		"nodejs",
-		"github",
-		"oauth"
+		"github-authentication",
+		"github-automation"
 	],
 	"author": "Volt Engine",
 	"license": "MIT",
@@ -36,5 +37,8 @@
 		"spdx-expression-validate": "^2.0.0",
 		"stopword": "^1.0.11"
 	},
-	"type": "module"
+	"type": "module",
+	"engines": {
+		"node": "14.x"
+	}
 }

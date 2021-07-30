@@ -1,27 +1,29 @@
 import got from 'got';
-// import querystring from 'querystring';
 
 import config from '../config.js';
 
-// export function getAuthorizationUrl(redirectUrl) {
-// 	return 'https://github.com/login/oauth/authorize/?scope=read:org&client_id='
-// 			+ config.githubClientId + '&redirect_uri=' + encodeURIComponent(redirectUrl);
-// }
+export function getAuthorizationUrl(redirectUrl) {
+	return 'https://github.com/login/oauth/authorize/?scope=read:org&client_id='
+			+ config.githubClientId + '&redirect_uri=' + encodeURIComponent(redirectUrl);
+}
 
-// export async function getAccessToken(code) {
-// 	let gotResponse = await got.post('https://github.com/login/oauth/access_token', {
-// 		headers: {
-// 			'Accept': 'application/x-www-form-urlencoded'
-// 		},
-// 		form: {
-// 			'client_id': config.githubClientId,
-// 			'client_secret': process.env.GITHUB_CLIENT_SECRET,
-// 			'code': code
-// 		}
-// 	});
+export async function getAccessToken(code) {
+	let gotResponse = await got.post('https://github.com/login/oauth/access_token', {
+		headers: {
+			'Accept': 'application/json'
+		},
+		form: {
+			'client_id': config.githubClientId,
+			'client_secret': process.env.GITHUB_CLIENT_SECRET,
+			'code': code
+		}
+	}).json();
 
-// 	return querystring.parse(gotResponse.body)['access_token'];
-// }
+	if (gotResponse['access_token'] === undefined)
+		throw Error('Invalid redirect code.');
+
+	return gotResponse['access_token'];
+}
 
 export async function checkAccessToken(token) {
 	const url = `https://api.github.com/applications/${config.githubClientId}/token`;

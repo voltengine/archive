@@ -1,6 +1,7 @@
 import express from 'express';
 import expressSlowDown from 'express-slow-down';
 
+import authRouter from './routers/auth.js';
 import packageRouter from './routers/package.js';
 import publishRouter from './routers/publish.js';
 import searchRouter from './routers/search.js';
@@ -23,14 +24,16 @@ import config from './config.js';
 
 	server.get('/', async (req, res) => {
 		res.write('Available endpoints:\n');
+		res.write('GET /auth/\n');
 		res.write('GET /package/{scope}/{name}/\n');
 		res.write('DELETE /package/{scope}/{name}/\n')
 		res.write('POST /publish/?token={token}\n');
-		res.write('GET /search/?query={query}');
+		res.write('GET /search/?query={query}\n');
 		res.write('GET /top/');
 		res.end();
 	});
 
+	server.use('/auth/', authRouter);
 	server.use('/package/', packageRouter);
 	server.use('/publish/', publishRouter);
 	server.use('/search/', searchRouter);

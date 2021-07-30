@@ -15,7 +15,7 @@ GITHUB_CLIENT_SECRET={oauth-app-secret}
 
 ⚙️ Modify `./src/config.js` as you fancy. Remember to set matching GitHub client ID.
 
-💻 Install Node.js dependencies with:
+💻 Install Node.js dependencies:
 
 ```
 npm install

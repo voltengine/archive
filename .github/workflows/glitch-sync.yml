@@ -1,4 +1,4 @@
-name: Glitch Deploy
+name: Glitch Sync
 
 on:
   push:
@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  glitch-deploy:
+  glitch-sync:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Sync Glitch repository with GitHub
+    - name: Synchronize Glitch project with GitHub
       uses: kanadgupta/glitch-sync@v1.1
       with:
         project-id: '${{ secrets.GLITCH_PROJECT_ID }}'

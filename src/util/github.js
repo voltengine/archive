@@ -1,5 +1,4 @@
 import got from 'got';
-import httpErrors from 'http-errors';
 // import querystring from 'querystring';
 
 import config from '../config.js';

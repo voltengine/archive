@@ -12,11 +12,9 @@ jobs:
     
     steps:
     - name: Sync Glitch repository with GitHub
-      uses: wei/git-sync@v1
-      env:
-        SOURCE_REPO: "https://github.com/voltengine/archive.git"
-        SOURCE_BRANCH: main
-        DESTINATION_REPO: ${{ secrets.GLITCH_GIT_URL }}
-        DESTINATION_BRANCH: master
-      with:
-        args: $SOURCE_REPO $SOURCE_BRANCH $DESTINATION_REPO $DESTINATION_BRANCH
+      uses: wei/git-sync@v3
+        with:
+          source_repo: "voltengine/archive"
+          source_branch: "main"
+          destination_repo: ${{ secrets.GLITCH_GIT_URL }}
+          destination_branch: "master"

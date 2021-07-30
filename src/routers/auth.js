@@ -6,9 +6,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
 	if (req.query.code === undefined) {
-		const redirectUrl = req.protocol + '://'
-				+ req.hostname + '/auth/';
-		res.redirect(github.getAuthorizationUrl(redirectUrl));
+		res.redirect(github.getAuthorizationUrl());
 		return;
 	}
 

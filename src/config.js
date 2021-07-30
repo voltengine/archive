@@ -1,7 +1,7 @@
 export default {
 	githubClientId: 'd3165174a7de6a3b2d43',
-	skipAuthentication: true,
-	dataPath: './data/',
+	skipAuthentication: false,
+	dataPath: './.data/',
 	slowDown: {
 		windowMs: 60000,
 		delayAfter: 100,
@@ -31,12 +31,10 @@ export default {
 	],
 	whitelist: {
 		enabled: true,
-		users: [
-			'rayferric'
-		]
+		users: []
 	},
 	blacklist:  {
-		enabled: false,
+		enabled: true,
 		users: []
 	}
 }

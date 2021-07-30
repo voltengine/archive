@@ -12,9 +12,7 @@ jobs:
     
     steps:
     - name: Sync Glitch repository with GitHub
-      uses: wei/git-sync@v3
+      uses: kanadgupta/glitch-sync@v1.1
       with:
-        source_repo: "voltengine/archive"
-        source_branch: "main"
-        destination_repo: ${{ secrets.GLITCH_GIT_URL }}
-        destination_branch: "master"
+        project-id: '${{ secrets.GLITCH_PROJECT_ID }}'
+        auth-token: '${{ secrets.GLITCH_AUTHORIZATION }}'

@@ -1,0 +1,24 @@
+name: Glitch Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  glitch-deploy:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    
+    steps:
+    - name: Sync Glitch repository with GitHub
+      uses: wei/git-sync@v1
+      env:
+        SOURCE_REPO: "https://github.com/voltengine/archive.git"
+        SOURCE_BRANCH: main
+        DESTINATION_REPO: ${{ secrets.GLITCH_GIT_URL }}
+        DESTINATION_BRANCH: master
+      with:
+        args: $SOURCE_REPO $SOURCE_BRANCH $DESTINATION_REPO $DESTINATION_BRANCH

@@ -7,6 +7,7 @@ import authRouter from './routers/auth.js';
 import packageRouter from './routers/package.js';
 import searchRouter from './routers/search.js';
 import topRouter from './routers/top.js';
+import lock from './util/lock.js';
 import config from './config.js';
 
 const app = express();
@@ -48,14 +49,26 @@ const server = app.listen(process.env.PORT, () => {
 });
 
 function terminate() {
-	// Gracefully reject requests and complete pending ones
-	// This does not sync pending view count
-	// changes, but they are not that important
+	// We're short of time, most
+	// systems force quit after 1 second
+
+	// Wait for requests
 	server.close(() => {
 		console.log('Server closed.');
-		process.exit(0);
+
+		// Wait for cirtical sections
+		const wait = () => {
+			if (lock.isBusy())
+				setTimeout(wait, 100);
+			else {
+				console.log('Critical sections halted.');
+				process.exit(0);
+			}
+		}
+		wait();
 	});
 }
 
-process.on('SIGTERM', terminate); // Kill (No Force)
-process.on('SIGINT', terminate); // Ctrl + C
+// Windows might force quit immediately on SIGINT
+process.on('SIGTERM', terminate);
+process.on('SIGINT', terminate);

@@ -1,66 +1,57 @@
 import express from 'express';
 import expressSlowDown from 'express-slow-down';
 import fs from 'fs';
+import jsonschema from 'jsonschema';
 import path from 'path';
+import spdxExpressionValidate from 'spdx-expression-validate';
 
 import * as github from '../util/github.js';
 import lock from '../util/lock.js';
 import prettyStringifyJson from '../util/pretty-stringify-json.js';
 import * as searchIndex from '../util/search-index.js';
 import config from '../config.js';
+import packageSchema from '../package-schema.js';
 
 const router = express.Router();
-const deleteSlowDown = expressSlowDown(config.deleteSlowDown);
+const validator = new jsonschema.Validator();
+const publishSlowDown = expressSlowDown(config.slowDown.publish);
+const deleteSlowDown = expressSlowDown(config.slowDown.delete);
 
-router.get('/*/*/', async (req, res, next) => {
-	const id = req.params[0] + '/' + req.params[1];
+// Map IDs to pending view count change,
+// each entry has an ongoing timer
+const viewsToSync = {};
+
+async function syncViews(id) {
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 	let totalViews = 1;
 
-	if (await lock.acquire(filepath, async () => {
-		// Returns true if server should continue to next route
+	let todayStr = new Date().toISOString();
+	todayStr = todayStr.substr(0, todayStr.indexOf('T'));
+	const today = new Date(todayStr);
 
-		let data;
-		try {
-			data = await fs.promises.readFile(filepath, 'utf-8');
-		} catch {
-			return true;
-		}
+	// Update manifest
 
-		let manifest = JSON.parse(data);
-
-		res.set('Content-Type', 'application/json');
-		res.send(data);
-
-		// Increment views and save updated manifest
-
-		let todayStr = new Date().toISOString();
-		todayStr = todayStr.substr(0, todayStr.indexOf('T'));
-		const today = new Date(todayStr);
+	await lock.acquire(filepath, async () => {
+		let manifest = JSON.parse(await fs.promises.readFile(filepath, 'utf-8'));
 
 		// Clean up dates over a week old
 		for (const oldDateStr in manifest.views) {
 			const oldDate = new Date(oldDateStr);
-			if (today - oldDate > 7 * 24 * 60 * 60 * 1000)
+			if (today - oldDate > config.viewCountKeepPeriod * 24 * 60 * 60 * 1000)
 				delete manifest.views[oldDateStr];
 			else
 				totalViews += manifest.views[oldDateStr];
 		}
 
-		// Increment today's counter
-		if (!manifest.views[todayStr])
-			manifest.views[todayStr] = 1;
+		// Add pending views
+		if (manifest.views[todayStr] === undefined)
+			manifest.views[todayStr] = viewsToSync[id];
 		else
-			manifest.views[todayStr]++;
+			manifest.views[todayStr] += viewsToSync[id];
+		delete viewsToSync[id];
 
-		data = prettyStringifyJson(manifest);
-
-		await fs.promises.writeFile(filepath, data);
-		return false;
-	})) {
-		next();
-		return;
-	}
+		await fs.promises.writeFile(filepath, prettyStringifyJson(manifest));
+	});
 
 	// Update top.json
 
@@ -85,8 +76,10 @@ router.get('/*/*/', async (req, res, next) => {
 					data = await fs.promises.readFile(packagePath, 'utf-8');
 				});
 
-				const viewCount = Object.values(JSON.parse(data).views)
-					.reduce((sum, value) => sum + value);
+				const views = JSON.parse(data).views;
+				const viewCount = Object.keys(views)
+					.filter(date => today - date < config.viewCountKeepPeriod * 24 * 60 * 60 * 1000)
+					.reduce((sum, key) => sum + views[key]);
 				viewCounts[competitorId] = viewCount;
 			} catch {}
 
@@ -96,13 +89,139 @@ router.get('/*/*/', async (req, res, next) => {
 
 		let sortedNames = Object.keys(viewCounts).sort(
 				(id1, id2) => viewCounts[id2] - viewCounts[id1]);
-		sortedNames = sortedNames.slice(0, 10);
+		sortedNames = sortedNames.slice(0, config.maxTopPackagesCount);
 
 		await fs.promises.mkdir(path.dirname(filepath), {
 			recursive: true
 		});
 		await fs.promises.writeFile(filepath, prettyStringifyJson(sortedNames));
 	});
+}
+
+router.post('/', publishSlowDown, async (req, res) => {
+	const pkg = req.body;
+	const result = validator.validate(pkg, packageSchema);
+
+	if (result.errors.length != 0) {
+		res.status(400);
+		res.write('Package does not comply with JSON schema:');
+		for (const error of result.errors)
+			res.write('\n- package' + error.stack.substr(8));
+		res.end();
+		return;
+	}
+
+	if(!spdxExpressionValidate(pkg.license)) {
+		res.status(400);
+		res.send('License is not a valid SPDX expression.');
+		return;
+	}
+
+	const scope = pkg.id.substr(0, pkg.id.indexOf('/'));
+	const error = await github.checkAuthorization(req.query.token, scope);
+	if (error !== undefined) {
+		res.status(error.status);
+		res.send(error.message);
+		return;
+	}
+
+	const filepath = path.normalize(path.join(config.dataPath,
+			'/packages/', pkg.id + '.json'));
+	
+	let data = undefined;
+	let oldManifest, newManifest;
+	await lock.acquire(filepath, async () => {
+		try {
+			data = await fs.promises.readFile(filepath, 'utf-8');
+		} catch {}
+		
+		oldManifest = data === undefined ? {} : JSON.parse(data);
+		newManifest = Object.assign({}, oldManifest);
+
+		const today = new Date().toISOString();
+
+		if (data === undefined) {
+			newManifest.created = today;
+			newManifest.releases = {};
+			newManifest.views = {};
+		}
+
+		newManifest.description = pkg.description;
+		newManifest.git = pkg.git;
+		newManifest.keywords = pkg.keywords;
+		newManifest.license = pkg.license;
+		newManifest.modified = today;
+		newManifest.releases[pkg.version] = pkg.dependencies === undefined ? {} : pkg.dependencies;
+		
+		await fs.promises.mkdir(path.dirname(filepath), {
+			recursive: true
+		});
+		await fs.promises.writeFile(filepath, prettyStringifyJson(newManifest));
+	});
+
+	if (data === undefined) {
+		const newKeywords = searchIndex.getKeywords([
+			newManifest.description,
+			pkg.id,
+			newManifest.keywords.join()
+		].join());
+		for (let keyword of newKeywords)
+			searchIndex.addMapping(keyword, pkg.id);
+
+		res.set('Location', new URL(
+			'/package/' + pkg.id + '/',
+			req.protocol + '://' + req.hostname +
+			(config.trustProxy ? '' : ':' + process.env.PORT)
+		).toString());
+		res.status(201);
+		res.send(`Created ${pkg.id}.`);
+	} else {
+		// ID cannot change
+		const oldKeywords = searchIndex.getKeywords([
+			oldManifest.description,
+			oldManifest.keywords.join()
+		].join());
+		const newKeywords = searchIndex.getKeywords([
+			newManifest.description,
+			newManifest.keywords.join()
+		].join());
+
+		const removedKeywords = oldKeywords.filter(keyword => !newKeywords.includes(keyword));
+		const addedKeywords = newKeywords.filter(keyword => !oldKeywords.includes(keyword));
+
+		for (let keyword of removedKeywords)
+			searchIndex.removeMapping(keyword, pkg.id);
+		for (let keyword of addedKeywords)
+			searchIndex.addMapping(keyword, pkg.id);
+
+		res.status(200);
+		res.send(`Updated ${pkg.id}.`);
+	}
+});
+
+router.get('/*/*/', async (req, res, next) => {
+	const id = req.params[0] + '/' + req.params[1];
+	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
+
+	let data;
+	try {
+		await lock.acquire(filepath, async () => {
+			// Returns true if server should continue to next route
+			data = await fs.promises.readFile(filepath, 'utf-8');
+		});
+	} catch {
+		next();
+		return;
+	}
+
+	if (viewsToSync[id] === undefined) {
+		viewsToSync[id] = 1;
+		setTimeout(syncViews, config.viewCountSyncDelay, id);
+	} else
+		viewsToSync[id]++;
+
+	res.set('Content-Type', 'application/json');
+	res.send(data);
 });
 
 router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {

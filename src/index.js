@@ -1,50 +1,61 @@
+process.env.PORT = process.env.PORT || 80;
+
 import express from 'express';
 import expressSlowDown from 'express-slow-down';
 
 import authRouter from './routers/auth.js';
 import packageRouter from './routers/package.js';
-import publishRouter from './routers/publish.js';
 import searchRouter from './routers/search.js';
 import topRouter from './routers/top.js';
 import config from './config.js';
 
-(async function() {
-	const server = express();
+const app = express();
 
-	// Allow 100 full-speed requests per
-	// minute, then delay by 100 ms
-	server.use(expressSlowDown(config.slowDown));
+app.set('trust proxy', config.trustProxy);
 
-	server.use(express.json());
+app.use(expressSlowDown(config.slowDown.common));
 
-	server.use((err, req, res, next) => {
-		res.status(err.status);
-		res.send(err.message);
-	});
+app.use(express.json());
 
-	server.get('/', async (req, res) => {
-		res.write('Available endpoints:\n');
-		res.write('GET /auth/\n');
-		res.write('GET /package/{scope}/{name}/\n');
-		res.write('DELETE /package/{scope}/{name}/\n')
-		res.write('POST /publish/?token={token}\n');
-		res.write('GET /search/?query={query}\n');
-		res.write('GET /top/');
-		res.end();
-	});
+app.use((err, req, res, next) => {
+	res.status(err.status);
+	res.send(err.message);
+});
 
-	server.use('/auth/', authRouter);
-	server.use('/package/', packageRouter);
-	server.use('/publish/', publishRouter);
-	server.use('/search/', searchRouter);
-	server.use('/top/', topRouter);
+app.get('/', async (req, res) => {
+	res.write('Available endpoints:\n');
+	res.write('GET /auth/\n');
+	res.write('POST /package/?token={token}\n');
+	res.write('GET /package/{scope}/{name}/\n');
+	res.write('DELETE /package/{scope}/{name}/?token={token}\n')
+	res.write('GET /search/?query={query}\n');
+	res.write('GET /top/');
+	res.end();
+});
 
-	server.use((req, res) => {
-		res.status(404);
-		res.send('Not found.');
-	});
+app.use('/auth/', authRouter);
+app.use('/package/', packageRouter);
+app.use('/search/', searchRouter);
+app.use('/top/', topRouter);
 
-	const port = 
-	await server.listen(process.env.PORT);
+app.use((req, res) => {
+	res.status(404);
+	res.send('Not found.');
+});
+
+const server = app.listen(process.env.PORT, () => {
 	console.log(`Listening on port ${process.env.PORT}.`);
-})();
+});
+
+function terminate() {
+	// Gracefully reject requests and complete pending ones
+	// This does not sync pending view count
+	// changes, but they are not that important
+	server.close(() => {
+		console.log('Server closed.');
+		process.exit(0);
+	});
+}
+
+process.on('SIGTERM', terminate); // Kill (No Force)
+process.on('SIGINT', terminate); // Ctrl + C

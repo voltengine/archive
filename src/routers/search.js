@@ -6,7 +6,7 @@ import * as searchIndex from '../util/search-index.js';
 import config from '../config.js';
 
 const router = express.Router();
-const slowDown = expressSlowDown(config.searchSlowDown);
+const slowDown = expressSlowDown(config.slowDown.search);
 
 router.get('/', slowDown, async (req, res) => {
 	if (req.query.query === undefined) {

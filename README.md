@@ -9,9 +9,11 @@
 📝 Create following `./.env` file:
 
 ```
-PORT={port}
+PORT={http-port}
 GITHUB_CLIENT_SECRET={oauth-app-secret}
 ```
+
+If PORT remains unspecified, server defaults to `80`. 
 
 ⚙️ Modify `./src/config.js` as you fancy. Remember to set matching GitHub client ID.
 
@@ -22,8 +24,15 @@ npm install
 ```
 
 ### Running
+
+For testing:
 ```
 npm test
+```
+
+For deployment:
+```
+npm start
 ```
 
 ## About

@@ -284,8 +284,9 @@ router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
 	const id = scope + '/' + req.params[1];
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 
-	const error = await github.checkAuthorization(req.query.token, scope);
-	if (error !== undefined) {
+	try {
+		await github.checkAuthorization(req.query.token, scope);
+	} catch (error) {
 		res.status(error.status);
 		res.send(error.message);
 		return;

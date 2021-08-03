@@ -28,7 +28,7 @@ app.get('/', async (req, res) => {
 	res.write('GET /auth/\n');
 	res.write('POST /package/?token={token}\n');
 	res.write('GET /package/{scope}/{name}/\n');
-	res.write('DELETE /package/{scope}/{name}/?token={token}\n')
+	res.write('DELETE /package/{scope}/{name}/?token={token}[&release={release}]\n')
 	res.write('GET /search/?query={query}\n');
 	res.write('GET /top/');
 	res.end();

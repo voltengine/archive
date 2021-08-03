@@ -100,8 +100,8 @@ async function syncViews(id) {
 
 router.post('/', publishSlowDown, async (req, res) => {
 	const pkg = req.body;
-	const result = validator.validate(pkg, packageSchema);
 
+	let result = validator.validate(pkg, packageSchema);
 	if (result.errors.length != 0) {
 		res.status(400);
 		res.write('Package does not comply with JSON schema:');
@@ -118,46 +118,101 @@ router.post('/', publishSlowDown, async (req, res) => {
 	}
 
 	const scope = pkg.id.substr(0, pkg.id.indexOf('/'));
-	const error = await github.checkAuthorization(req.query.token, scope);
-	if (error !== undefined) {
+	result = undefined;
+	try {
+		result = await github.checkAuthorization(req.query.token, scope);
+	} catch (error) {
 		res.status(error.status);
 		res.send(error.message);
 		return;
 	}
+
+	// Past this point, {result} = undefined
+	// only if auth has been skipped
 
 	const filepath = path.normalize(path.join(config.dataPath,
 			'/packages/', pkg.id + '.json'));
 	
 	let data = undefined;
 	let oldManifest, newManifest;
-	await lock.acquire(filepath, async () => {
+
+	const now = new Date();
+	if (await lock.acquire(filepath, async () => {
+		// Returns today's oldest release date or undefined
+
 		try {
 			data = await fs.promises.readFile(filepath, 'utf-8');
-		} catch {}
+		} catch {
+			const scopeDir = path.normalize(path.join(config.dataPath,
+				'/packages/', scope + '/'));
+
+			if (result !== undefined && !config.admins.includes(result.info.user.login)
+					&& (await fs.promises.readdir(scopeDir)).length >= config.maxPackagesPerScope) {
+				res.status(503);
+				res.send(`Maximum number of packages (${config.maxPackagesPerScope}) has already been published in this scope.\n`
+						+ 'You can delete one of your packages to free up the limit.\n'
+						+ 'Or ask archive administration to create one for you.');
+				return true;
+			}
+		}
 		
 		oldManifest = data === undefined ? {} : JSON.parse(data);
 		newManifest = Object.assign({}, oldManifest);
-
-		const today = new Date().toISOString();
+		
+		const nowStr = now.toISOString();
 
 		if (data === undefined) {
-			newManifest.created = today;
+			newManifest.created = nowStr;
 			newManifest.releases = {};
 			newManifest.views = {};
+		}
+
+		let oldestRecentReleaseDate = now;
+		if (result !== undefined && !config.admins.includes(result.info.user.login)
+				&& !Object.keys(newManifest.releases).includes(pkg.version)
+				&& Object.values(newManifest.releases).reduce((count, release) => {
+					const date = new Date(release.created);
+					if (now - date < 24 * 60 * 60 * 1000) {
+						if (date < oldestRecentReleaseDate)
+						oldestRecentReleaseDate = date;
+						return count + 1;
+					}
+					return count;
+				}, 0) >= config.maxNewReleasesPerPackagePerDay) {
+			const waitMillis = 24 * 60 * 60 * 1000 - (now - oldestRecentReleaseDate);
+			const nextAvailableDate = new Date(oldestRecentReleaseDate);
+			nextAvailableDate.setTime(oldestRecentReleaseDate.getTime() + waitMillis);
+	
+			res.status(503);
+			res.set('Retry-After', waitMillis / 1000);
+			res.send(`Maximum number of daily releases (${config.maxNewReleasesPerPackagePerDay}) has been reached.\n`
+					+ `Next release can be published on ${nextAvailableDate}.\n`
+					+ 'You can delete one of your recent releases if waiting is not an option.\n'
+					+ 'Or ask archive administration to create one for you.');
+			return true;
 		}
 
 		newManifest.description = pkg.description;
 		newManifest.git = pkg.git;
 		newManifest.keywords = pkg.keywords;
 		newManifest.license = pkg.license;
-		newManifest.modified = today;
-		newManifest.releases[pkg.version] = pkg.dependencies === undefined ? {} : pkg.dependencies;
+		newManifest.modified = nowStr;
+		if (newManifest.releases[pkg.version] === undefined) {
+			newManifest.releases[pkg.version] = {
+				created: nowStr,
+				dependencies: pkg.dependencies
+			};
+		} else
+			newManifest.releases[pkg.version].dependencies = pkg.dependencies;
 		
 		await fs.promises.mkdir(path.dirname(filepath), {
 			recursive: true
 		});
 		await fs.promises.writeFile(filepath, prettyStringifyJson(newManifest));
-	});
+
+		return false;
+	}))
+		return;
 
 	if (data === undefined) {
 		const newKeywords = searchIndex.getKeywords([
@@ -236,29 +291,44 @@ router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
 		return;
 	}
 
-	let data = undefined;
-	await lock.acquire(filepath, async () => {
+	const message = await lock.acquire(filepath, async () => {
+		let data;
 		try {
 			data = await fs.promises.readFile(filepath, 'utf-8');
-		} catch {}
-	})
-	if (data === undefined)
-		next();
-	else {
+		} catch {
+			return undefined;
+		}
 		const manifest = JSON.parse(data);
 
-		const query = [
-			manifest.description,
-			id,
-			manifest.keywords.join()
-		].join();
+		if (req.query.release === undefined) {
+			const query = [
+				manifest.description,
+				id,
+				manifest.keywords.join()
+			].join();
 
-		for (let keyword of searchIndex.getKeywords(query)) {
-			searchIndex.removeMapping(keyword, id);
+			for (let keyword of searchIndex.getKeywords(query))
+				searchIndex.removeMapping(keyword, id);
+
+			await fs.promises.rm(filepath);
+			return `Removed ${id}.`;
 		}
 
-		await fs.promises.rm(filepath);
-		res.send(`Removed ${id}.`);
+		if (manifest.releases[req.query.release] === undefined) {
+			res.status(400);
+			return 'No such release.';
+		}
+
+		delete manifest.releases[req.query.release];
+		await fs.promises.writeFile(filepath, prettyStringifyJson(manifest));
+
+		return `Removed release ${req.query.release} of ${id}.`;
+	});
+
+	if (message === undefined) {
+		next();
+	} else {
+		res.send(message);
 	}
 });
 

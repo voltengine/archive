@@ -1,6 +1,6 @@
 export default {
 	githubClientId: 'd3165174a7de6a3b2d43', // Pair with GITHUB_CLIENT_SECRET
-	skipAuthentication: true, // Use only for local/development service
+	skipAuthentication: false, // Use only for local/development service
 	dataPath: './.data/',
 	slowDown: {
 		// https://www.npmjs.com/package/express-slow-down
@@ -47,7 +47,7 @@ export default {
 	// Only proxies on default ports (80/443) are supported, eg:
 	// https://example.com:443/
 	// http://example.com:80/
-	trustProxy: false,
+	trustProxy: true,
 	// For how long to cache each package's view
 	// count in memory before performing I/O (ms)
 	viewCountSyncDelay: 60000,
@@ -58,5 +58,9 @@ export default {
 	// Manifests may still contain out-dated records
 	// after a long period of disinterest
 	// These will be removed {viewCountSyncDelay} ms after first fetch
-	viewCountKeepPeriod: 7
+	viewCountKeepPeriod: 7,
+	// Does not affect administratiors
+	maxPackagesPerScope: 8,
+	// Does not affect administratiors
+	maxNewReleasesPerPackagePerDay: 1
 }

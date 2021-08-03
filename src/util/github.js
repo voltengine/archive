@@ -54,33 +54,33 @@ export async function checkAccessToken(token) {
 	}
 }
 
-export async function getAuthorizedUser(req, res) {
-	let user = undefined;
+// export async function getAuthorizedUser(req) {
+// 	let user = undefined;
 
-	if (req.session) {
-		const result = await checkAccessToken(req.session.accessToken);
-		if (result.valid)
-			user = result.info.user;
-		else {
-			// Session is invalid if access token has been revoked
-			req.session.destroy();
-		}
-	}
+// 	if (req.session) {
+// 		const result = await checkAccessToken(req.session.accessToken);
+// 		if (result.valid)
+// 			user = result.info.user;
+// 		else {
+// 			// Session is invalid if access token has been revoked
+// 			req.session.destroy();
+// 		}
+// 	}
 
-	// Not authorized if user is undefined
-	return user;
-}
+// 	// Not authorized if user is undefined
+// 	return user;
+// }
 
-export async function ensureAuthorizedUser(req, res) {
-	const user = await getAuthorizedUser(req, res);
+// export async function ensureAuthorizedUser(req, res) {
+// 	const user = await getAuthorizedUser(req);
 
-	if (user === undefined)
-		res.redirect('/sign-in/?redirect=' + encodeURIComponent(req.originalUrl))
+// 	if (user === undefined)
+// 		res.redirect('/sign-in/?redirect=' + encodeURIComponent(req.originalUrl))
 
-	// Caller should immediately return if user is
-	// undefined, response is no longer valid at that time
-	return user;
-}
+// 	// Caller should immediately return if user is
+// 	// undefined, response is no longer valid at that time
+// 	return user;
+// }
 
 export async function getOwnedOrgs(accessToken, login) {
 	const orgs = [];
@@ -108,32 +108,34 @@ export async function getOwnedOrgs(accessToken, login) {
 }
 
 export async function checkAuthorization(token, scope) {
+	// Returns undefined or checkAccessToken(...) result, can throw an error
+
 	if (config.skipAuthentication)
 		return undefined;
 
 	if (token === undefined)
-		return { status: 401, message: 'Access token has not been provided.' };
+		throw { status: 401, message: 'Access token has not been provided.' };
 
 	const result = await checkAccessToken(token);
 	if (!result.valid)
-		return { status: 401, message: 'Invalid access token.' };
+		throw { status: 401, message: 'Invalid access token.' };
 
 	if (config.admins.includes(result.info.user.login))
-		return undefined;
+		return result;
 
 	if (config.whitelist.enabled &&
 			!config.whitelist.users.includes(result.info.user.login))
-		return { status: 403, message: 'Authenticated user is not whitelisted.' };
+		throw { status: 403, message: 'Authenticated user is not whitelisted.' };
 
 	if (config.blacklist.enabled &&
 			config.blacklist.users.includes(result.info.user.login))
-		return { status: 403, message: 'Authenticated user is blacklisted.' };
+		throw { status: 403, message: 'Authenticated user is blacklisted.' };
 
 	const scopes = await getOwnedOrgs(token, result.info.user.login);
 	scopes.push(result.info.user.login);
 
 	if (!scopes.includes(scope))
-		return { status: 403, message: 'Scope is not editable by authenticated user.' };
+		throw { status: 403, message: 'Scope is not editable by authenticated user.' };
 
-	return undefined;
+	return result;
 }

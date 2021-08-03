@@ -302,6 +302,8 @@ router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
 		const manifest = JSON.parse(data);
 
 		if (req.query.release === undefined) {
+			// Update search index
+
 			const query = [
 				manifest.description,
 				id,
@@ -310,6 +312,27 @@ router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
 
 			for (let keyword of searchIndex.getKeywords(query))
 				searchIndex.removeMapping(keyword, id);
+
+			// Update top.json
+
+			const topPath = path.normalize(path.join(config.dataPath, '/top.json'));
+			await lock.acquire(topPath, async () => {
+				try {
+					const topPackages = JSON.parse(await fs.promises.readFile(topPath, 'utf-8'));
+
+					let modified = false;
+					topPackages = topPackages.filter(item => {
+						if (item === id) {
+							modified = true
+							return false;
+						} else
+							return true;
+					});
+					
+					if (modified)
+						await fs.promises.writeFile(topPath, prettyStringifyJson(topPackages));
+				} catch {}
+			});
 
 			await fs.promises.rm(filepath);
 			return `Removed ${id}.`;

@@ -318,19 +318,23 @@ router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
 			const topPath = path.normalize(path.join(config.dataPath, '/top.json'));
 			await lock.acquire(topPath, async () => {
 				try {
-					const topPackages = JSON.parse(await fs.promises.readFile(topPath, 'utf-8'));
+					let topPackages = JSON.parse(await fs.promises.readFile(topPath, 'utf-8'));
 
 					let modified = false;
 					topPackages = topPackages.filter(item => {
 						if (item === id) {
-							modified = true
+							modified = true;
 							return false;
 						} else
 							return true;
 					});
-					
-					if (modified)
-						await fs.promises.writeFile(topPath, prettyStringifyJson(topPackages));
+
+					if (modified) {
+						if (topPackages.length == 0)
+							await fs.promises.rm(topPath);
+						else
+							await fs.promises.writeFile(topPath, prettyStringifyJson(topPackages));
+					}
 				} catch {}
 			});
 

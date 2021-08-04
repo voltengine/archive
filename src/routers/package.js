@@ -254,8 +254,9 @@ router.post('/', publishSlowDown, async (req, res) => {
 	}
 });
 
-router.get('/*/*/', async (req, res, next) => {
-	const id = req.params[0] + '/' + req.params[1];
+router.get('/:scope/:name/', async (req, res, next) => {
+	const id = req.params.scope + '/' + req.params.name;
+	console.log(id);
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 
 	let data;
@@ -279,13 +280,12 @@ router.get('/*/*/', async (req, res, next) => {
 	res.send(data);
 });
 
-router.delete('/*/*/', deleteSlowDown, async (req, res, next) => {
-	const scope = req.params[0];
-	const id = scope + '/' + req.params[1];
+router.delete('/:scope/:name/', deleteSlowDown, async (req, res, next) => {
+	const id = req.params.scope + '/' + req.params.name;
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 
 	try {
-		await github.checkAuthorization(req.query.token, scope);
+		await github.checkAuthorization(req.query.token, req.params.scope);
 	} catch (error) {
 		res.status(error.status);
 		res.send(error.message);

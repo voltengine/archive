@@ -15,7 +15,7 @@ router.get('/', slowDown, async (req, res) => {
 		return;
 	}
 
-	res.set('Content-Type: application/json');
+	res.set('Content-Type', 'application/json');
 	res.send(prettyStringifyJson(await searchIndex.search(req.query.query.substr(0, 128))));
 });
 

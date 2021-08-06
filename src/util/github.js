@@ -2,9 +2,14 @@ import got from 'got';
 
 import config from '../config.js';
 
-export function getAuthorizationUrl() {
-	return 'https://github.com/login/oauth/authorize/?scope=read:org&client_id='
+export function getAuthorizationUrl(redirectUrl) {
+	let url = 'https://github.com/login/oauth/authorize/?scope=read:org&client_id='
 			+ config.githubClientId;
+	
+	if (redirectUrl !== undefined)
+		url += '&redirect_uri=' + encodeURI(redirectUrl);
+
+	return url;
 }
 
 export async function getAccessToken(code) {

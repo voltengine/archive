@@ -11,6 +11,7 @@ const slowDown = expressSlowDown(config.slowDown.search);
 router.get('/', slowDown, async (req, res) => {
 	if (req.query.query === undefined) {
 		res.status(400);
+		res.set('Content-Type', 'text/plain');
 		res.send('Search query has not been provided.');
 		return;
 	}

@@ -1,12 +1,20 @@
+import appendQuery from 'append-query';
 import express from 'express';
 
 import * as github from '../util/github.js';
+import config from '../config.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
 	if (req.query.code === undefined) {
-		res.redirect(github.getAuthorizationUrl());
+		let redirectUrl = config.githubCallbackUrl;
+		if (req.query.redirect !== undefined)
+		redirectUrl = appendQuery(config.githubCallbackUrl, {
+			redirect: req.query.redirect
+		});
+
+		res.redirect(github.getAuthorizationUrl(redirectUrl));
 		return;
 	}
 
@@ -15,11 +23,24 @@ router.get('/', async (req, res) => {
 		accessToken = await github.getAccessToken(req.query.code);
 	} catch {
 		res.status(401);
+		res.set('Content-Type', 'text/plain');
 		res.send('Invalid redirect code. Try again without query string.');
 		return;
 	}
 
-	res.send(accessToken);
+	if (req.query.redirect === undefined) {
+		res.set('Content-Type', 'text/plain');
+		res.send(accessToken);
+	} else {
+		res.redirect(appendQuery(req.query.redirect, {
+			token: accessToken
+		}));
+	}
+});
+
+router.get('/id/', (req, res) => {
+	res.set('Content-Type', 'text/plain');
+	res.send(config.githubClientId);
 });
 
 export default router;

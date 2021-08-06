@@ -62,5 +62,6 @@ export default {
 	// Does not affect administratiors
 	maxPackagesPerScope: 8,
 	// Does not affect administratiors
-	maxNewReleasesPerPackagePerDay: 1
+	maxNewReleasesPerPackagePerDay: 1,
+	githubCallbackUrl: 'https://voltengine.glitch.me/auth/'
 }

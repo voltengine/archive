@@ -104,6 +104,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 	let result = validator.validate(pkg, packageSchema);
 	if (result.errors.length != 0) {
 		res.status(400);
+		res.set('Content-Type', 'text/plain');
 		res.write('Package does not comply with JSON schema:');
 		for (const error of result.errors)
 			res.write('\n- package' + error.stack.substr(8));
@@ -113,6 +114,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 
 	if(!spdxExpressionValidate(pkg.license)) {
 		res.status(400);
+		res.set('Content-Type', 'text/plain');
 		res.send('License is not a valid SPDX expression.');
 		return;
 	}
@@ -123,6 +125,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 		result = await github.checkAuthorization(req.query.token, scope);
 	} catch (error) {
 		res.status(error.status);
+		res.set('Content-Type', 'text/plain');
 		res.send(error.message);
 		return;
 	}
@@ -149,6 +152,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 			if (result !== undefined && !config.admins.includes(result.info.user.login)
 					&& (await fs.promises.readdir(scopeDir)).length >= config.maxPackagesPerScope) {
 				res.status(503);
+				res.set('Content-Type', 'text/plain');
 				res.send(`Maximum number of packages (${config.maxPackagesPerScope}) has already been published in this scope.\n`
 						+ 'You can delete one of your packages to free up the limit.\n'
 						+ 'Or ask archive administration to create one for you.');
@@ -184,6 +188,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 			nextAvailableDate.setTime(oldestRecentReleaseDate.getTime() + waitMillis);
 	
 			res.status(503);
+			res.set('Content-Type', 'text/plain');
 			res.set('Retry-After', waitMillis / 1000);
 			res.send(`Maximum number of daily releases (${config.maxNewReleasesPerPackagePerDay}) has been reached.\n`
 					+ `Next release can be published on ${nextAvailableDate}.\n`
@@ -223,12 +228,13 @@ router.post('/', publishSlowDown, async (req, res) => {
 		for (let keyword of newKeywords)
 			searchIndex.addMapping(keyword, pkg.id);
 
+		res.status(201);
+		res.set('Content-Type', 'text/plain');
 		res.set('Location', new URL(
 			'/package/' + pkg.id + '/',
 			req.protocol + '://' + req.hostname +
 			(config.trustProxy ? '' : ':' + process.env.PORT)
 		).toString());
-		res.status(201);
 		res.send(`Created ${pkg.id}.`);
 	} else {
 		// ID cannot change
@@ -250,13 +256,14 @@ router.post('/', publishSlowDown, async (req, res) => {
 			searchIndex.addMapping(keyword, pkg.id);
 
 		res.status(200);
+		res.set('Content-Type', 'text/plain');
 		res.send(`Updated ${pkg.id}.`);
 	}
 });
 
 router.get('/:scope/:name/', async (req, res, next) => {
 	const id = req.params.scope + '/' + req.params.name;
-	console.log(id);
+	
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 
 	let data;
@@ -288,6 +295,7 @@ router.delete('/:scope/:name/', deleteSlowDown, async (req, res, next) => {
 		await github.checkAuthorization(req.query.token, req.params.scope);
 	} catch (error) {
 		res.status(error.status);
+		res.set('Content-Type', 'text/plain');
 		res.send(error.message);
 		return;
 	}
@@ -356,6 +364,7 @@ router.delete('/:scope/:name/', deleteSlowDown, async (req, res, next) => {
 	if (message === undefined) {
 		next();
 	} else {
+		res.set('Content-Type', 'text/plain');
 		res.send(message);
 	}
 });

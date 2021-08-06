@@ -15,7 +15,7 @@ GITHUB_CLIENT_SECRET={oauth-app-secret}
 
 If PORT remains unspecified, server defaults to `80`. 
 
-⚙️ Modify `./src/config.js` as you fancy. Remember to set matching GitHub client ID.
+⚙️ Modify `./src/config.js` as you fancy. Remember to set matching GitHub client ID and callback URL.
 
 💻 Install Node.js dependencies:
 

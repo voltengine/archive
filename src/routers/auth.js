@@ -18,9 +18,9 @@ router.get('/', async (req, res) => {
 		return;
 	}
 
-	let accessToken;
+	let token;
 	try {
-		accessToken = await github.getAccessToken(req.query.code);
+		token = await github.getAccessToken(req.query.code);
 	} catch {
 		res.status(401);
 		res.set('Content-Type', 'text/plain');
@@ -30,11 +30,10 @@ router.get('/', async (req, res) => {
 
 	if (req.query.redirect === undefined) {
 		res.set('Content-Type', 'text/plain');
-		res.send(accessToken);
+		res.send(token);
 	} else {
-		res.redirect(appendQuery(req.query.redirect, {
-			token: accessToken
-		}));
+		res.set('Authorization', 'Bearer ' + token);
+		res.redirect(req.query.redirect);
 	}
 });
 

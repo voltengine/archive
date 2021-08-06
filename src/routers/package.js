@@ -122,7 +122,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 	const scope = pkg.id.substr(0, pkg.id.indexOf('/'));
 	result = undefined;
 	try {
-		result = await github.checkAuthorization(req.query.token, scope);
+		result = await github.checkAuthorization(req.get('Authorization'), scope);
 	} catch (error) {
 		res.status(error.status);
 		res.set('Content-Type', 'text/plain');
@@ -292,7 +292,7 @@ router.delete('/:scope/:name/', deleteSlowDown, async (req, res, next) => {
 	let filepath = path.normalize(path.join(config.dataPath, '/packages/', id + '.json'));
 
 	try {
-		await github.checkAuthorization(req.query.token, req.params.scope);
+		await github.checkAuthorization(req.get('Authorization'), req.params.scope);
 	} catch (error) {
 		res.status(error.status);
 		res.set('Content-Type', 'text/plain');

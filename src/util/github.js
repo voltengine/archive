@@ -63,7 +63,7 @@ export async function checkAccessToken(token) {
 // 	let user = undefined;
 
 // 	if (req.session) {
-// 		const result = await checkAccessToken(req.session.accessToken);
+// 		const result = await checkAccessToken(req.session.token);
 // 		if (result.valid)
 // 			user = result.info.user;
 // 		else {
@@ -87,12 +87,12 @@ export async function checkAccessToken(token) {
 // 	return user;
 // }
 
-export async function getOwnedOrgs(accessToken, login) {
+export async function getOwnedOrgs(token, login) {
 	const orgs = [];
 
 	let gotResponse = await got.get('https://api.github.com/user/orgs', {
 		headers: {
-			'Authorization': 'Bearer ' + accessToken,
+			'Authorization': 'Bearer ' + token,
 			'Accept': 'application/vnd.github.v3+json'
 		}
 	}).json();
@@ -100,7 +100,7 @@ export async function getOwnedOrgs(accessToken, login) {
 	for (const org of gotResponse) {
 		gotResponse = await got.get('https://api.github.com/orgs/' + org.login + '/memberships/' + login, {
 			headers: {
-				'Authorization': 'Bearer ' + accessToken,
+				'Authorization': 'Bearer ' + token,
 				'Accept': 'application/vnd.github.v3+json'
 			}
 		}).json();
@@ -112,14 +112,19 @@ export async function getOwnedOrgs(accessToken, login) {
 	return orgs;
 }
 
-export async function checkAuthorization(token, scope) {
+export async function checkAuthorization(authorization, scope) {
 	// Returns undefined or checkAccessToken(...) result, can throw an error
 
 	if (config.skipAuthentication)
 		return undefined;
 
-	if (token === undefined)
-		throw { status: 401, message: 'Access token has not been provided.' };
+	if (authorization === undefined)
+		throw { status: 401, message: 'Authorization header is missing.' };
+
+	if (!authorization.startsWith('Bearer '))
+		throw { status: 401, message: '\"Bearer\" authorization type is required.' };
+
+	const token = authorization.substr(7);
 
 	const result = await checkAccessToken(token);
 	if (!result.valid)

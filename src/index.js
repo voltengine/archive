@@ -25,10 +25,11 @@ app.use((err, req, res, next) => {
 
 app.get('/', async (req, res) => {
 	res.write('Available endpoints:\n');
-	res.write('GET /auth/\n');
-	res.write('POST /package/?token={token}\n');
+	res.write('GET /auth/[?redirect={url}]\n');
+	res.write('GET /auth/id/\n');
+	res.write('POST /package/ + Authorization: Bearer {token}\n');
 	res.write('GET /package/{scope}/{name}/\n');
-	res.write('DELETE /package/{scope}/{name}/?token={token}[&release={release}]\n')
+	res.write('DELETE /package/{scope}/{name}/[?release={release}] + Authorization: Bearer {token}\n')
 	res.write('GET /search/?query={query}\n');
 	res.write('GET /top/');
 	res.end();

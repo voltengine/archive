@@ -120,9 +120,9 @@ router.post('/', publishSlowDown, async (req, res) => {
 	}
 
 	const scope = pkg.id.substr(0, pkg.id.indexOf('/'));
-	result = undefined;
+	let user = undefined;
 	try {
-		result = await github.checkAuthorization(req.get('Authorization'), scope);
+		user = await github.checkAuthorization(req.get('Authorization'), scope);
 	} catch (error) {
 		res.status(error.status);
 		res.set('Content-Type', 'text/plain');
@@ -130,7 +130,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 		return;
 	}
 
-	// Past this point, {result} = undefined
+	// Past this point, {user} = undefined
 	// only if auth has been skipped
 
 	const filepath = path.normalize(path.join(config.dataPath,
@@ -149,7 +149,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 			const scopeDir = path.normalize(path.join(config.dataPath,
 				'/packages/', scope + '/'));
 
-			if (result !== undefined && !config.admins.includes(result.info.user.login)
+			if (user !== undefined && !config.admins.includes(user.login)
 					&& (await fs.promises.readdir(scopeDir)).length >= config.maxPackagesPerScope) {
 				res.status(503);
 				res.set('Content-Type', 'text/plain');
@@ -172,7 +172,7 @@ router.post('/', publishSlowDown, async (req, res) => {
 		}
 
 		let oldestRecentReleaseDate = now;
-		if (result !== undefined && !config.admins.includes(result.info.user.login)
+		if (user !== undefined && !config.admins.includes(user.login)
 				&& !Object.keys(newManifest.releases).includes(pkg.version)
 				&& Object.values(newManifest.releases).reduce((count, release) => {
 					const date = new Date(release.created);

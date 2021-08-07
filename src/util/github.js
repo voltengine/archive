@@ -30,33 +30,51 @@ export async function getAccessToken(code) {
 	return gotResponse['access_token'];
 }
 
-export async function checkAccessToken(token) {
-	const url = `https://api.github.com/applications/${config.githubClientId}/token`;
-	const authorization = 'Basic ' + Buffer.from(config.githubClientId +
-			':' + process.env.GITHUB_CLIENT_SECRET).toString('base64');
+// export async function checkAccessToken(token) {
+// 	const url = `https://api.github.com/applications/${config.githubClientId}/token`;
+// 	const authorization = 'Basic ' + Buffer.from(config.githubClientId +
+// 			':' + process.env.GITHUB_CLIENT_SECRET).toString('base64');
 
+// 	try {
+// 		const gotResponse = await got.post(url, {
+// 			headers: {
+// 				'Content-Type': 'application/json',
+// 				'Authorization': authorization
+// 			},
+// 			json: {
+// 				'access_token': token
+// 			}
+// 		}).json();
+
+// 		// Access token is valid
+// 		return {
+// 			valid: true,
+// 			info: gotResponse
+// 		};
+// 	} catch {
+// 		// Access token is not valid (probably revoked by the user)
+// 		return {
+// 			valid: false
+// 		};
+// 	}
+// }
+
+export async function getUserInfo(token) {
 	try {
-		const gotResponse = await got.post(url, {
+		const gotResponse = await got.get(`https://api.github.com/user`, {
 			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': authorization
-			},
-			json: {
-				'access_token': token
+				'Accept': 'application/vnd.github.v3+json',
+				'Authorization': 'Bearer ' + token
 			}
 		}).json();
 
 		// Access token is valid
-		return {
-			valid: true,
-			info: gotResponse
-		};
-	} catch {
-		// Access token is not valid (probably revoked by the user)
-		return {
-			valid: false
-		};
-	}
+		if (gotResponse.login !== undefined)
+			return gotResponse;
+	} catch {}
+	
+	// Access token is not valid (probably revoked by the user)
+	return undefined;
 }
 
 // export async function getAuthorizedUser(req) {
@@ -113,7 +131,7 @@ export async function getOwnedOrgs(token, login) {
 }
 
 export async function checkAuthorization(authorization, scope) {
-	// Returns undefined or checkAccessToken(...) result, can throw an error
+	// Returns undefined or getUserInfo(...) result, can throw an error
 
 	if (config.skipAuthentication)
 		return undefined;
@@ -126,23 +144,23 @@ export async function checkAuthorization(authorization, scope) {
 
 	const token = authorization.substr(7);
 
-	const result = await checkAccessToken(token);
-	if (!result.valid)
+	const user = await getUserInfo(token);
+	if (user === undefined)
 		throw { status: 401, message: 'Invalid access token.' };
 
-	if (config.admins.includes(result.info.user.login))
-		return result;
+	if (config.admins.includes(user.login))
+		return user;
 
 	if (config.whitelist.enabled &&
-			!config.whitelist.users.includes(result.info.user.login))
+			!config.whitelist.users.includes(user.login))
 		throw { status: 403, message: 'Authenticated user is not whitelisted.' };
 
 	if (config.blacklist.enabled &&
-			config.blacklist.users.includes(result.info.user.login))
+			config.blacklist.users.includes(user.login))
 		throw { status: 403, message: 'Authenticated user is blacklisted.' };
 
-	const scopes = await getOwnedOrgs(token, result.info.user.login);
-	scopes.push(result.info.user.login);
+	const scopes = await getOwnedOrgs(token, user.login);
+	scopes.push(user.login);
 
 	if (!scopes.includes(scope))
 		throw { status: 403, message: 'Scope is not editable by authenticated user.' };

@@ -108,24 +108,26 @@ export async function getUserInfo(token) {
 export async function getOwnedOrgs(token, login) {
 	const orgs = [];
 
-	let gotResponse = await got.get('https://api.github.com/user/orgs', {
-		headers: {
-			'Authorization': 'Bearer ' + token,
-			'Accept': 'application/vnd.github.v3+json'
-		}
-	}).json();
-
-	for (const org of gotResponse) {
-		gotResponse = await got.get('https://api.github.com/orgs/' + org.login + '/memberships/' + login, {
+	try {
+		let gotResponse = await got.get('https://api.github.com/user/orgs', {
 			headers: {
 				'Authorization': 'Bearer ' + token,
 				'Accept': 'application/vnd.github.v3+json'
 			}
 		}).json();
-		
-		if (gotResponse.role == 'admin')
-			orgs.push(org.login);
-	}
+
+		for (const org of gotResponse) {
+			gotResponse = await got.get('https://api.github.com/orgs/' + org.login + '/memberships/' + login, {
+				headers: {
+					'Authorization': 'Bearer ' + token,
+					'Accept': 'application/vnd.github.v3+json'
+				}
+			}).json();
+			
+			if (gotResponse.role == 'admin')
+				orgs.push(org.login);
+		}
+	} catch {}
 
 	return orgs;
 }

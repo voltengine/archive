@@ -78,8 +78,9 @@ async function syncViews(id) {
 
 				const views = JSON.parse(data).views;
 				const viewCount = Object.keys(views)
-					.filter(date => today - date < config.viewCountKeepPeriod * 24 * 60 * 60 * 1000)
-					.reduce((sum, key) => sum + views[key]);
+					.filter(date => today - new Date(date) <
+							config.viewCountKeepPeriod * 24 * 60 * 60 * 1000)
+					.reduce((sum, key) => sum + views[key], 0);
 				viewCounts[competitorId] = viewCount;
 			} catch {}
 

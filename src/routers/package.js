@@ -147,14 +147,10 @@ router.post('/', publishSlowDown, async (req, res) => {
 
 	const filepath = path.normalize(path.join(config.dataPath,
 			'/packages/', pkg.id + '.json'));
-	
-	let data = undefined;
-	let oldManifest, newManifest;
 
 	const now = new Date();
-	if (await lock.acquire(filepath, async () => {
-		// Returns today's oldest release date or undefined
-
+	await lock.acquire(filepath, async () => {
+		let data = undefined;
 		try {
 			data = await fs.promises.readFile(filepath, 'utf-8');
 		} catch {
@@ -168,12 +164,12 @@ router.post('/', publishSlowDown, async (req, res) => {
 				res.send(`Maximum number of packages (${config.maxPackagesPerScope}) has already been published in this scope.\n`
 						+ 'You can delete one of your packages to free up the limit.\n'
 						+ 'Or ask archive administration to create one for you.');
-				return true;
+				return;
 			}
 		}
 		
-		oldManifest = data === undefined ? {} : JSON.parse(data);
-		newManifest = Object.assign({}, oldManifest);
+		const oldManifest = data === undefined ? {} : JSON.parse(data);
+		const newManifest = Object.assign({}, oldManifest);
 		
 		const nowStr = now.toISOString();
 
@@ -227,50 +223,51 @@ router.post('/', publishSlowDown, async (req, res) => {
 		});
 		await fs.promises.writeFile(filepath, prettyStringifyJson(newManifest));
 
-		return false;
-	}))
-		return;
+		// Update search index
+		// We don't release the lock yet to guarantee
+		// finishing this block in case of SIGTERM
 
-	if (data === undefined) {
-		const newKeywords = searchIndex.getKeywords([
-			newManifest.description,
-			pkg.id,
-			newManifest.keywords.join()
-		].join());
-		for (let keyword of newKeywords)
-			searchIndex.addMapping(keyword, pkg.id);
-
-		res.status(201);
-		res.set('Content-Type', 'text/plain');
-		res.set('Location', new URL(
-			'/package/' + pkg.id + '/',
-			req.protocol + '://' + req.hostname +
-			(config.trustProxy ? '' : ':' + process.env.PORT)
-		).toString());
-		res.send(`Created ${pkg.id}.`);
-	} else {
-		// ID cannot change
-		const oldKeywords = searchIndex.getKeywords([
-			oldManifest.description,
-			oldManifest.keywords.join()
-		].join());
-		const newKeywords = searchIndex.getKeywords([
-			newManifest.description,
-			newManifest.keywords.join()
-		].join());
-
-		const removedKeywords = oldKeywords.filter(keyword => !newKeywords.includes(keyword));
-		const addedKeywords = newKeywords.filter(keyword => !oldKeywords.includes(keyword));
-
-		for (let keyword of removedKeywords)
-			searchIndex.removeMapping(keyword, pkg.id);
-		for (let keyword of addedKeywords)
-			searchIndex.addMapping(keyword, pkg.id);
-
-		res.status(200);
-		res.set('Content-Type', 'text/plain');
-		res.send(`Updated ${pkg.id}.`);
-	}
+		if (data === undefined) {
+			const newKeywords = searchIndex.getKeywords([
+				newManifest.description,
+				pkg.id,
+				newManifest.keywords.join()
+			].join());
+			for (let keyword of newKeywords)
+				searchIndex.addMapping(keyword, pkg.id);
+	
+			res.status(201);
+			res.set('Content-Type', 'text/plain');
+			res.set('Location', new URL(
+				'/package/' + pkg.id + '/',
+				req.protocol + '://' + req.hostname +
+				(config.trustProxy ? '' : ':' + process.env.PORT)
+			).toString());
+			res.send(`Created ${pkg.id}.`);
+		} else {
+			// ID cannot change
+			const oldKeywords = searchIndex.getKeywords([
+				oldManifest.description,
+				oldManifest.keywords.join()
+			].join());
+			const newKeywords = searchIndex.getKeywords([
+				newManifest.description,
+				newManifest.keywords.join()
+			].join());
+	
+			const removedKeywords = oldKeywords.filter(keyword => !newKeywords.includes(keyword));
+			const addedKeywords = newKeywords.filter(keyword => !oldKeywords.includes(keyword));
+	
+			for (let keyword of removedKeywords)
+				searchIndex.removeMapping(keyword, pkg.id);
+			for (let keyword of addedKeywords)
+				searchIndex.addMapping(keyword, pkg.id);
+	
+			res.status(200);
+			res.set('Content-Type', 'text/plain');
+			res.send(`Updated ${pkg.id}.`);
+		}
+	});
 });
 
 router.get('/:scope/:name/', async (req, res, next) => {

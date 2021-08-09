@@ -31,8 +31,14 @@ async function syncViews(id) {
 
 	// Update manifest
 
-	await lock.acquire(filepath, async () => {
-		let manifest = JSON.parse(await fs.promises.readFile(filepath, 'utf-8'));
+	if (await lock.acquire(filepath, async () => {
+		let manifest
+		try {
+			manifest = JSON.parse(await fs.promises.readFile(filepath, 'utf-8'));
+		} catch {
+			// Package was deleted before sync timer has finished
+			return true;
+		}
 
 		// Clean up dates over a week old
 		for (const oldDateStr in manifest.views) {
@@ -51,7 +57,12 @@ async function syncViews(id) {
 		delete viewsToSync[id];
 
 		await fs.promises.writeFile(filepath, prettyStringifyJson(manifest));
-	});
+
+		return false;
+	})) {
+		delete viewsToSync[id];
+		return;
+	}
 
 	// Update top.json
 

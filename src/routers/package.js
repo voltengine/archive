@@ -79,6 +79,7 @@ async function syncViews(id) {
 		
 		// Compute current view count for all packages on the list
 		const viewCounts = await topPackages.reduce(async (viewCounts, competitorId) => {
+			viewCounts = await viewCounts;
 			let data;
 			try {
 				const packagePath = path.normalize(path.join(config.dataPath,
